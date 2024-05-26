@@ -5,15 +5,15 @@ from dotenv import load_dotenv
 import time
 from datetime import datetime
 
-# Load environment variables
+
 load_dotenv()
 
 ETHERSCAN_API_KEY = os.getenv('ETHERSCAN_API_KEY')
 HOT_WALLET_ADDRESS = os.getenv('HOT_WALLET_ADDRESS')
-THRESHOLD_VALUE = 1  # Set the threshold value for large transfers in ETH
-CHECK_INTERVAL = 300  # Set the interval to 5 minutes (300 seconds)
-PRICE_CHECK_INTERVAL = 60  # Check price every minute
-PRICE_MONITOR_DURATION = 30 * 60  # Monitor price for 30 minutes
+THRESHOLD_VALUE = 1  
+CHECK_INTERVAL = 300  
+PRICE_CHECK_INTERVAL = 60  
+PRICE_MONITOR_DURATION = 30 * 60  
 
 def get_transactions(address):
     url = f"https://api.etherscan.io/api"
@@ -56,7 +56,7 @@ def get_eth_price():
 def parse_transactions(transactions, threshold=THRESHOLD_VALUE):
     trades = []
     for tx in transactions:
-        value_eth = int(tx['value']) / 10**18  # Convert value from wei to ETH
+        value_eth = int(tx['value']) / 10**18  
         if value_eth >= threshold:
             trade = {
                 'blockNumber': tx['blockNumber'],
@@ -66,7 +66,7 @@ def parse_transactions(transactions, threshold=THRESHOLD_VALUE):
                 'to': tx['to'],
                 'value': value_eth,
                 'gas': tx['gas'],
-                'gasPrice': int(tx['gasPrice']) / 10**9,  # Convert from wei to gwei
+                'gasPrice': int(tx['gasPrice']) / 10**9, 
                 'isError': tx['isError'],
                 'txreceipt_status': tx['txreceipt_status']
             }
@@ -86,8 +86,12 @@ def monitor_eth_price(duration, interval, log_file):
         f.write(f"\nMonitoring ETH price for {duration//60} minutes from {datetime.now()}\n")
         while time.time() < end_time:
             price = get_eth_price()
-            if price:
+            if price is not None:
                 log_entry = f"{datetime.now()}: ${price}\n"
+                print(log_entry.strip())
+                f.write(log_entry)
+            else:
+                log_entry = f"{datetime.now()}: Error fetching price\n"
                 print(log_entry.strip())
                 f.write(log_entry)
             time.sleep(interval)
@@ -96,9 +100,9 @@ if __name__ == "__main__":
     while True:
         transactions = get_transactions(HOT_WALLET_ADDRESS)
         
-        # Print transactions before filtering
+
         print(f"Total transactions fetched: {len(transactions)}")
-        print(transactions[:5])  # Print first 5 transactions for verification
+        print(transactions[:5])  
         
         trades = parse_transactions(transactions)
         df_trades = display_trades(trades)
@@ -107,5 +111,5 @@ if __name__ == "__main__":
             log_file = "eth_price_log.txt"
             monitor_eth_price(PRICE_MONITOR_DURATION, PRICE_CHECK_INTERVAL, log_file)
         
-        # Wait for the specified interval before checking again
+
         time.sleep(CHECK_INTERVAL)
